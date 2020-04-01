@@ -11,6 +11,12 @@ GPIO_ECHO = 17
 gpio.setup(GPIO_TRIGGER, gpio.OUT)
 gpio.setup(GPIO_ECHO, gpio.IN)
 
+class UltraSound(object):
+    def __init__(self, trigger_pin, echo_pin, max_echo_wait_time=1.2 * 8/343.2):
+        self.trigger_pin = trigger_pin
+        self.echo_pin = echo_pin
+        self.max_echo_wait_time = max_echo_wait_time
+
 def distance():
     #print("Sending Pulse")
     # Send 10us pulse
