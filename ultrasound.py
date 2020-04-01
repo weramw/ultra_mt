@@ -18,16 +18,21 @@ class UltraSound(object):
         time.sleep(10e-6)
         gpio.output(self.trigger_pin, False)
 
+        trigger_start = time.time()
         pulse_start = time.time()
         pulse_stop = time.time()
 
-        # TODO inf loop if no echo
         # Wait until pulse starts
         while gpio.input(self.echo_pin) == 0:
             pulse_start = time.time()
+            if pulse_start - trigger_start > self.max_echo_wait_time:
+                return None
+
         # Wait until pulse ends
         while gpio.input(self.echo_pin) == 1:
             pulse_stop = time.time()
+            if pulse_stop - trigger_start > self.max_echo_wait_time:
+                return None
 
         pulse_length = pulse_stop - pulse_start
         # sonic speed is 343.2 m/s
@@ -45,7 +50,7 @@ if __name__ == '__main__':
         while True:
             for ind, us in enumerate(uss):
                 dist = us.get_distance()
-                print("US %d: %.2f m" % (ind,dist))
+                print(f"US {ind}: {dist if dist is not None else 999:.2f} m")
                 time.sleep(0.5)
     # Reset by pressing CTRL + C
     except KeyboardInterrupt:
