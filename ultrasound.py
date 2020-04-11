@@ -5,7 +5,7 @@ import time
 gpio.setmode(gpio.BCM)
 
 class UltraSound(object):
-    def __init__(self, trigger_pin, echo_pin, max_echo_wait_time=1.2 * 8/343.2):
+    def __init__(self, trigger_pin, echo_pin, max_echo_wait_time=1.2 * 2*4.0/343.2):
         self.trigger_pin = trigger_pin
         self.echo_pin = echo_pin
         self.max_echo_wait_time = max_echo_wait_time
@@ -52,7 +52,7 @@ if __name__ == '__main__':
             for ind, us in enumerate(uss):
                 dist = us.get_distance()
                 dists.append(f"{dist if dist is not None else 999:.2f}")
-                time.sleep(0.5)
+                time.sleep(0.05)
             print(f"Dists:  {', '.join([d + 'm' for d in dists])}")
             time.sleep(0.2)
     # Reset by pressing CTRL + C
