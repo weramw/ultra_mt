@@ -42,16 +42,19 @@ class UltraSound(object):
 
 if __name__ == '__main__':
     us1 = UltraSound(trigger_pin=27, echo_pin=17)
-    #us2 = UltraSound(trigger_pin=24, echo_pin=23)
-    #uss = [us1, us2]
-    uss = [us1]
+    us2 = UltraSound(trigger_pin=23, echo_pin=24)
+    uss = [us1, us2]
+    #uss = [us2]
 
     try:
         while True:
+            dists = []
             for ind, us in enumerate(uss):
                 dist = us.get_distance()
-                print(f"US {ind}: {dist if dist is not None else 999:.2f} m")
+                dists.append(f"{dist if dist is not None else 999:.2f}")
                 time.sleep(0.5)
+            print(f"Dists:  {', '.join([d + 'm' for d in dists])}")
+            time.sleep(0.2)
     # Reset by pressing CTRL + C
     except KeyboardInterrupt:
         gpio.cleanup()
