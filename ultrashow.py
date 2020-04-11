@@ -26,9 +26,9 @@ def plot_update(i):
     dists = []
     for ind, us in enumerate(uss):
         dist = us.get_distance()
-        dists.append(dist if dist is not None else 999)
+        dists.append(dist if dist is not None else 9.99)
         time.sleep(0.05)
-    dist = dists[0]
+    dist = dists
 
     now = time.time()
     xs.append(now)
@@ -38,11 +38,12 @@ def plot_update(i):
 
     axis.clear()
     axis.plot(xs, ys)
+    axis.set_ylim(0, 5.0)
 
 if __name__ == '__main__':
     #uss = [us2]
 
-    anim = animation.FuncAnimation(fig, plot_update, interval=100)
+    anim = animation.FuncAnimation(fig, plot_update, interval=50)
     plt.show()
     gpio.cleanup()
     sys.exit(0)
