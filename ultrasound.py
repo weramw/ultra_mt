@@ -41,8 +41,8 @@ class UltraSound(object):
         return distance
 
 if __name__ == '__main__':
-    us1 = UltraSound(trigger_pin=27, echo_pin=17)
-    us2 = UltraSound(trigger_pin=23, echo_pin=24)
+    us1 = UltraSound(trigger_pin=27, echo_pin=17)   # gruen
+    us2 = UltraSound(trigger_pin=23, echo_pin=24)   # lila
     uss = [us1, us2]
     #uss = [us2]
 

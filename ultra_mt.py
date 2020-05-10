@@ -6,8 +6,8 @@ import RPi.GPIO as gpio
 from ultrasound import UltraSound
 from ultrahue import HueBridge, Light
 
-us1 = UltraSound(trigger_pin=27, echo_pin=17)
-us2 = UltraSound(trigger_pin=23, echo_pin=24)
+us_across = UltraSound(trigger_pin=27, echo_pin=17)   # gruen
+us_along = UltraSound(trigger_pin=23, echo_pin=24)   # lila
 
 hue_ip = "192.168.0.87"
 api_key = "tNmBJLQdGdYBta51nzwU2PP8GfzuzFFBlup5h9c2"
