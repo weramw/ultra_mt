@@ -34,7 +34,9 @@ class UltraSoundFeatureWalkThrough(UltraSoundFeatures):
         self.empty_range = None
         self.empty_std = None
         self.last_distance = None
-        self.calibration_time = 5.0
+        self.calibration_time = 3.0
+        self.distance_buffer = []       # (time, dist) pairs
+        self.distance_buffer_max_age = 0.5 #1.0
 
     def calibrate(self):
         ranges = []
@@ -55,14 +57,33 @@ class UltraSoundFeatureWalkThrough(UltraSoundFeatures):
     def update(self):
         """ Update the internal feature based on sensor data. """
         # TODO rolling buffer over X time and use max range in buffer
-        self.last_distance = self.ultra_sound.get_distance()
+        now = time.time()
+        cur_dist = self.ultra_sound.get_distance()
+        if cur_dist is None:
+            return
+        #print(f"Update at {now}")
+        self.last_distance = cur_dist
+        self.distance_buffer.append((now, cur_dist))
+        min_time = now - self.distance_buffer_max_age
+        #print(f"mt {min_time}")
+        #print(f"Start DB: size {len(self.distance_buffer)} [{self.distance_buffer[0][0]}, {self.distance_buffer[-1][0]}]")
+        while self.distance_buffer and self.distance_buffer[0][0] < min_time:
+            self.distance_buffer = self.distance_buffer[1:]
+            #print(f"DB: size {len(self.distance_buffer)} [{self.distance_buffer[0][0]}, {self.distance_buffer[-1][0]}]")
+        #print(f"Final DB: size {len(self.distance_buffer)} [{self.distance_buffer[0][0]}, {self.distance_buffer[-1][0]}]")
 
     def has_motion(self):
         """ Return if motion was detected. """
         if self.last_distance is None:
             return False
-        print(f"Distance: {self.last_distance:.2f}m < {self.empty_range - 3*self.empty_std - self.min_detection_width:.2f}m")
-        return self.last_distance < self.empty_range - 3*self.empty_std - self.min_detection_width
+        if not self.distance_buffer:
+            return False
+        #print(self.distance_buffer)
+        dists = [de[1] for de in self.distance_buffer]
+        #print(dists)
+        max_dist = max(dists)
+        print(f"Distance: {max_dist:.2f}m < {self.empty_range - 3*self.empty_std - self.min_detection_width:.2f}m")
+        return max_dist < self.empty_range - 3*self.empty_std - self.min_detection_width
 
 
 if __name__ == '__main__':
