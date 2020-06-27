@@ -6,8 +6,8 @@ import RPi.GPIO as gpio
 
 from ultrasound import UltraSound
 
-us_across = UltraSound(trigger_pin=27, echo_pin=17)   # gruen
-us_along = UltraSound(trigger_pin=23, echo_pin=24)   # lila
+us_across = UltraSound(trigger_pin=17, echo_pin=27)
+us_along = UltraSound(trigger_pin=23, echo_pin=24)
 
 class UltraSoundFeatures(object):
     def __init__(self, us):
@@ -34,11 +34,12 @@ class UltraSoundFeatureWalkThrough(UltraSoundFeatures):
         self.empty_range = None
         self.empty_std = None
         self.last_distance = None
+        self.calibration_time = 5.0
 
     def calibrate(self):
         ranges = []
         start_time = time.time()
-        while time.time() - start_time <= 5.0:
+        while time.time() - start_time <= self.calibration_time:
             dist = self.ultra_sound.get_distance()
             time.sleep(0.05)
             if dist is not None:
