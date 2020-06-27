@@ -82,7 +82,7 @@ class UltraSoundFeatureWalkThrough(UltraSoundFeatures):
             return False
         max_dist = max(dists)
         print(f"Distance: {max_dist:.2f}m < {self.ultra_sound_buffer.calibration_range - self.ultra_sound_buffer.calibration_std - self.min_detection_width:.2f}m")
-        return max_dist < self.ultra_sound_buffer.calibration_range - 3*self.ultra_sound_buffer.calibration_std - self.min_detection_width
+        return max_dist < self.ultra_sound_buffer.calibration_range - self.ultra_sound_buffer.calibration_std - self.min_detection_width
 
 class UltraSoundFeatureMotion(UltraSoundFeatures):
     def __init__(self, ub, min_motion_mahanobilis):

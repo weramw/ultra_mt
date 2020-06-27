@@ -70,6 +70,7 @@ class HueBridge(object):
     def get_lights(self):
         r = requests.get(self.api_url + "lights")
         lights_return = json.loads(r.text)
+        #print(lights_return)
         lights = []
         for li, light_dict in lights_return.items():
             l = Light(li, light_dict, self)
@@ -80,6 +81,13 @@ class HueBridge(object):
         r = requests.get(f"{self.api_url}lights/{light_id}")
         lights = json.loads(r.text)
         return lights
+
+    def _set_light_brightness(self, light_id, on, bri):
+        light_url = f"{self.api_url}lights/{light_id}/state"
+        data = {"on": on,
+                "bri": bri}
+        #print(data)
+        r = requests.put(light_url, json=data)
 
     def _set_light(self, light_id, on):
         light_url = f"{self.api_url}lights/{light_id}/state"
@@ -100,7 +108,7 @@ if __name__=="__main__":
     print(balkon)
     if len(sys.argv) > 1:
         on = sys.argv[1] == "1"
-        balkon.switch(on)
+        balkon.switch(on, 0.5)
         balkon.update()
         print(balkon)
 
