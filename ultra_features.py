@@ -4,7 +4,7 @@ import time
 import math
 import RPi.GPIO as gpio
 
-from ultrasound import UltraSound
+from ultra_sound import UltraSound
 
 us_across = UltraSound(trigger_pin=17, echo_pin=27)
 us_along = UltraSound(trigger_pin=23, echo_pin=24)

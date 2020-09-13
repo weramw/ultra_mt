@@ -4,7 +4,7 @@ import RPi.GPIO as gpio
 import time
 import numpy as np
 import csv
-from ultrasound import UltraSound
+from ultra_sound import UltraSound
 
 def save_csv(file_name, data):
     with open(file_name, 'w', newline='') as out_file:
