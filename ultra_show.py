@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import ultrasound
+import ultra_sound
 import time
 import sys
 import RPi.GPIO as gpio
@@ -8,8 +8,8 @@ import math
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-us1 = ultrasound.UltraSound(trigger_pin=17, echo_pin=27)
-us2 = ultrasound.UltraSound(trigger_pin=23, echo_pin=24)
+us1 = ultra_sound.UltraSound(trigger_pin=17, echo_pin=27)
+us2 = ultra_sound.UltraSound(trigger_pin=23, echo_pin=24)
 uss = [us1, us2]
 
 fig = plt.figure()

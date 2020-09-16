@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import RPi.GPIO as gpio
 import time
+import sys
 
 gpio.setmode(gpio.BCM)
 
@@ -43,7 +44,14 @@ class UltraSound(object):
 if __name__ == '__main__':
     us1 = UltraSound(trigger_pin=17, echo_pin=27)
     us2 = UltraSound(trigger_pin=23, echo_pin=24)
-    uss = [us1]
+    if len(sys.argv) > 1:
+        uss = []
+        if "1" in sys.argv[1]:
+            uss.append(us1)
+        if "2" in sys.argv[1]:
+            uss.append(us2)
+    else:
+        uss = [us1, us2]
 
     try:
         while True:

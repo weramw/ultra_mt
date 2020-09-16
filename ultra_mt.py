@@ -3,9 +3,9 @@ import sys
 import time
 import RPi.GPIO as gpio
 
-from ultrasound import UltraSound
+from ultra_sound import UltraSound
 from ultra_features import UltraSoundBuffer, UltraSoundFeatureWalkThrough, UltraSoundFeatureMotion
-from ultrahue import HueBridge, Light
+from ultra_hue import HueBridge, Light
 
 us_across = UltraSound(trigger_pin=17, echo_pin=27)
 us_along = UltraSound(trigger_pin=23, echo_pin=24)
