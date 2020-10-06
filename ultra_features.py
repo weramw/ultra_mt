@@ -153,6 +153,19 @@ class UltraSoundFeatureMotion(UltraSoundFeatures):
         print(f"Motion: std {std_dist:.3f}m > min_motion_mahab {self.min_motion_mahanobilis} * calib std {self.ultra_sound_buffer.calibration_std} = {self.min_motion_mahanobilis * self.ultra_sound_buffer.calibration_std:.3f}")
         return std_dist > self.min_motion_mahanobilis * self.ultra_sound_buffer.calibration_std
 
+class UltraSoundFeatureWalkThroughFiltered(UltraSoundFeatures):
+    def __init__(self, ultra_filter, min_detection_width=0):
+        super().__init__(ultra_filter)
+        self.min_detection_width = min_detection_width
+
+    def has_motion(self):
+        """ Return if motion was detected. """
+        dist = self.ultra_sound_buffer.get_distance()
+        if not dist:
+            return False
+        print(f"Distance: {dist:.2f}m < {self.ultra_sound_buffer.calibration_range - self.ultra_sound_buffer.calibration_std - self.min_detection_width:.2f}m")
+        return dist < self.ultra_sound_buffer.calibration_range - self.ultra_sound_buffer.calibration_std - self.min_detection_width
+
 
 if __name__ == '__main__':
     ub_hall = UltraSoundBuffer(us_hall)
@@ -166,7 +179,8 @@ if __name__ == '__main__':
     uf_bath.calibrate()
     print("Done.")
 
-    # us_feature_hall = UltraSoundFeatureWalkThrough(ub_hall, 0.15)
+    us_feature_hall = UltraSoundFeatureWalkThrough(ub_hall, 0.3)
+    us_feature_hall_filtered = UltraSoundFeatureWalkThroughFiltered(uf_hall, 0.3)
     # us_feature_motion = UltraSoundFeatureMotion(ub_hall, 3)
 
     try:
@@ -175,12 +189,13 @@ if __name__ == '__main__':
             ub_bath.update()
             uf_hall.update()
             uf_bath.update()
-            print(f"Filtered    Hall: {uf_hall.get_distance()}\tBath: {uf_bath.get_distance()}")
+            print(f"Filtered    Hall: {uf_hall.get_distance():.2f}\tBath: {uf_bath.get_distance():.2f}")
             hall_avg = sum(ub_hall.get_distances())/len(ub_hall.get_distances())
             bath_avg = sum(ub_bath.get_distances())/len(ub_bath.get_distances())
-            print(f"Averaged    Hall: {hall_avg}\tBath: {bath_avg}")
-            print(f"Max         Hall: {max(ub_hall.get_distances())}\tBath: {max(ub_bath.get_distances())}")
-            #print(f"us_feature_hall: {us_feature_hall.has_motion()}")
+            print(f"Averaged    Hall: {hall_avg:.2f}\tBath: {bath_avg:.2f}")
+            print(f"Max         Hall: {max(ub_hall.get_distances()):.2f}\tBath: {max(ub_bath.get_distances()):.2f}")
+            print(f"us_feature_hall: {us_feature_hall.has_motion()}")
+            print(f"us_feature_hall_filtered: {us_feature_hall_filtered.has_motion()}")
             #print(f"us_feature_motion: {us_feature_motion.has_motion()}")
             time.sleep(0.1)
     except KeyboardInterrupt:

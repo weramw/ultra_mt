@@ -31,11 +31,12 @@ if __name__ == '__main__':
 
     us1 = UltraSound(trigger_pin=17, echo_pin=27)
     us2 = UltraSound(trigger_pin=23, echo_pin=24)
-    uss = [us1,us2]
+    uss = [us2]
 
     data = [[] for _ in range(len(uss))]
 
     try:
+        print("Starting Recording...")
         while True:
             dists = []
             for ind, us in enumerate(uss):
@@ -49,6 +50,8 @@ if __name__ == '__main__':
     # Reset by pressing CTRL + C
     except KeyboardInterrupt:
         gpio.cleanup()
+
+    print("Ended Recording.")
 
     if out_file_name.endswith(".csv"):
         save_csv(out_file_name, data)
