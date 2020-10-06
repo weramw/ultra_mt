@@ -5,9 +5,10 @@ import math
 import RPi.GPIO as gpio
 
 from ultra_sound import UltraSound
+from kalman_filter import KalmanFilter
 
-us_across = UltraSound(trigger_pin=17, echo_pin=27)
-us_along = UltraSound(trigger_pin=23, echo_pin=24)
+us_hall = UltraSound(trigger_pin=17, echo_pin=27)
+us_bath = UltraSound(trigger_pin=23, echo_pin=24)
 
 class UltraSoundBuffer(object):
     def __init__(self, us, distance_buffer_max_age=0.5):
@@ -62,6 +63,58 @@ class UltraSoundBuffer(object):
         dists = [de[1] for de in self.distance_buffer]
         return dists
 
+class UltraSoundFilter(object):
+    def __init__(self, us):
+        self.ultra_sound = us
+
+        self.kalman_filter = None
+        self.last_update_time = None
+
+        self.calibration_time = 3.0
+        self.calibration_range = None
+        self.calibration_std = None
+
+    def calibrate(self):
+        """ Run initialization procedure on empty scene.
+            Determine mean and std of dists within calibration_time.
+
+            Can block for a while."""
+        ranges = []
+        start_time = time.time()
+        while time.time() - start_time <= self.calibration_time:
+            dist = self.ultra_sound.get_distance()
+            time.sleep(0.05)
+            if dist is not None:
+                ranges.append(dist)
+        if len(ranges) <= 1:
+            raise RuntimeError("No valid ranges during calibration.")
+            return
+        self.calibration_range = sum(ranges)/len(ranges)
+        sqr_error = [(dist - self.calibration_range)**2 for dist in ranges]
+        self.calibration_std = math.sqrt(sum(sqr_error)/(len(ranges) - 1))
+        print(f"Calibrated range as {self.calibration_range:.2f}m +- {self.calibration_std:.3f}m")
+        self.kalman_filter = KalmanFilter(self.calibration_range, self.calibration_std)
+
+    def update(self):
+        """ Update the internal feature based on sensor data. """
+        cur_dist = self.ultra_sound.get_distance()
+        now = time.time()
+        if cur_dist is None:
+            return
+        if self.last_update_time is None:
+            delta_t = 0
+        else:
+            delta_t = now - self.last_update_time
+        self.kalman_filter.predict(delta_t)
+        self.kalman_filter.correct(cur_dist)
+        self.last_update_time = now
+
+    def get_distance(self):
+        if self.kalman_filter is None:
+            return None
+        return self.kalman_filter.state[0]
+
+
 class UltraSoundFeatures(object):
     def __init__(self, ub):
         self.ultra_sound_buffer = ub
@@ -102,22 +155,33 @@ class UltraSoundFeatureMotion(UltraSoundFeatures):
 
 
 if __name__ == '__main__':
-    ub_across = UltraSoundBuffer(us_across)
-    ub_along = UltraSoundBuffer(us_along)
+    ub_hall = UltraSoundBuffer(us_hall)
+    ub_bath = UltraSoundBuffer(us_bath)
+    uf_hall = UltraSoundFilter(us_hall)
+    uf_bath = UltraSoundFilter(us_bath)
     print("Calibrating...")
-    ub_across.calibrate()
-    ub_along.calibrate()
+    ub_hall.calibrate()
+    ub_bath.calibrate()
+    uf_hall.calibrate()
+    uf_bath.calibrate()
     print("Done.")
 
-    us_feature_across = UltraSoundFeatureWalkThrough(ub_across, 0.15)
-    us_feature_motion = UltraSoundFeatureMotion(ub_across, 3)
+    # us_feature_hall = UltraSoundFeatureWalkThrough(ub_hall, 0.15)
+    # us_feature_motion = UltraSoundFeatureMotion(ub_hall, 3)
 
     try:
         while True:
-            ub_across.update()
-            ub_along.update()
-            print(f"us_feature_across: {us_feature_across.has_motion()}")
-            print(f"us_feature_motion: {us_feature_motion.has_motion()}")
+            ub_hall.update()
+            ub_bath.update()
+            uf_hall.update()
+            uf_bath.update()
+            print(f"Filtered    Hall: {uf_hall.get_distance()}\tBath: {uf_bath.get_distance()}")
+            hall_avg = sum(ub_hall.get_distances())/len(ub_hall.get_distances())
+            bath_avg = sum(ub_bath.get_distances())/len(ub_bath.get_distances())
+            print(f"Averaged    Hall: {hall_avg}\tBath: {bath_avg}")
+            print(f"Max         Hall: {max(ub_hall.get_distances())}\tBath: {max(ub_bath.get_distances())}")
+            #print(f"us_feature_hall: {us_feature_hall.has_motion()}")
+            #print(f"us_feature_motion: {us_feature_motion.has_motion()}")
             time.sleep(0.1)
     except KeyboardInterrupt:
         gpio.cleanup()
