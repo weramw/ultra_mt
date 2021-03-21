@@ -181,10 +181,15 @@ class UltraSoundFeatureWalkThroughFiltered(UltraSoundFeatures):
             self.detection_start_time  = None
             self.detection_end_time = None
 
-        print(f"Distance: {dist:.2f}m < {self.max_detection_threshold:.2f}m? Interval: [{self.detection_start_time}, {self.detection_end_time}] ({self.detection_end_time - self.detection_start_time}s)")
         if self.detection_start_time is not None:
-            return self.detection_end_time - self.detection_start_time >= self.min_detection_time
-
+            detection_time = self.detection_end_time - self.detection_start_time
+        else:
+            detection_time = -1.
+        print(f"Distance: {dist:.2f}m < {self.max_detection_threshold:.2f}m? Interval: [{self.detection_start_time}, {self.detection_end_time}] ({detection_time}s)")
+        if self.detection_start_time is not None:
+            return detection_time >= self.min_detection_time
+        else:
+            return False
 
 if __name__ == '__main__':
     ub_hall = UltraSoundBuffer(us_hall)
@@ -200,7 +205,7 @@ if __name__ == '__main__':
 
     us_feature_hall = UltraSoundFeatureWalkThrough(ub_hall, 0.3)
     us_feature_hall_filtered = UltraSoundFeatureWalkThroughFiltered(uf_hall, 1.0, 0.2)
-    # us_feature_motion = UltraSoundFeatureMotion(ub_hall, 3)
+    us_feature_bath_filtered = UltraSoundFeatureWalkThroughFiltered(uf_bath, 1.0, 0.2)
 
     try:
         while True:
@@ -215,7 +220,7 @@ if __name__ == '__main__':
             print(f"Max         Hall: {max(ub_hall.get_distances()):.2f}\tBath: {max(ub_bath.get_distances()):.2f}")
             print(f"us_feature_hall: {us_feature_hall.has_motion()}")
             print(f"us_feature_hall_filtered: {us_feature_hall_filtered.has_motion()}")
-            #print(f"us_feature_motion: {us_feature_motion.has_motion()}")
+            print(f"us_feature_bath_filtered: {us_feature_bath_filtered.has_motion()}")
             time.sleep(0.1)
     except KeyboardInterrupt:
         gpio.cleanup()
