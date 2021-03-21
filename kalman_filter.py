@@ -9,6 +9,18 @@ class KalmanFilter(object):
                    [0, (0.05/0.1)**2]])
         self.cov_predict = None
 
+    def distance(self):
+        return self.state[0]
+
+    def distance_std(self):
+        return math.sqrt(self.cov[0,0])
+
+    def velocity(self):
+        return self.state[1]
+
+    def velocity_std(self):
+        return math.sqrt(self.cov[1,1])
+
     def predict(self, delta_t):
         self.state_predict = np.copy(self.state)
         self.state_predict[0] += self.state_predict[1] * delta_t

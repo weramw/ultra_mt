@@ -112,7 +112,7 @@ class UltraSoundFilter(object):
     def get_distance(self):
         if self.kalman_filter is None:
             return None
-        return self.kalman_filter.state[0]
+        return self.kalman_filter.distance()
 
 
 class UltraSoundFeatures(object):
@@ -154,17 +154,36 @@ class UltraSoundFeatureMotion(UltraSoundFeatures):
         return std_dist > self.min_motion_mahanobilis * self.ultra_sound_buffer.calibration_std
 
 class UltraSoundFeatureWalkThroughFiltered(UltraSoundFeatures):
-    def __init__(self, ultra_filter, min_detection_width=0):
+    def __init__(self, ultra_filter, max_detection_threshold=0, min_detection_time=0):
         super().__init__(ultra_filter)
-        self.min_detection_width = min_detection_width
+        self.max_detection_threshold = max_detection_threshold
+        self.min_detection_time = min_detection_time
+
+        self.detection_start_time = None
+        self.detection_end_time = None
 
     def has_motion(self):
         """ Return if motion was detected. """
-        dist = self.ultra_sound_buffer.get_distance()
+        dist = self.ultra_sound_buffer.kalman_filter.distance()
         if not dist:
             return False
-        print(f"Distance: {dist:.2f}m < {self.ultra_sound_buffer.calibration_range - self.ultra_sound_buffer.calibration_std - self.min_detection_width:.2f}m")
-        return dist < self.ultra_sound_buffer.calibration_range - self.ultra_sound_buffer.calibration_std - self.min_detection_width
+        ts = time.time()
+
+        if dist < self.max_detection_threshold:
+            if self.detection_start_time is None:   # new interval
+                self.detection_start_time = ts
+                self.detection_end_time = ts
+            else:                       # continue/expand interval
+                self.detection_end_time = ts
+        elif self.detection_start_time is not None:
+            #if end_feature - start_feature >= min_feature_time:
+            #    feature_intervals.append((start_feature, end_feature))
+            self.detection_start_time  = None
+            self.detection_end_time = None
+
+        print(f"Distance: {dist:.2f}m < {self.max_detection_threshold:.2f}m? Interval: [{self.detection_start_time}, {self.detection_end_time}] ({self.detection_end_time - self.detection_start_time}s)")
+        if self.detection_start_time is not None:
+            return self.detection_end_time - self.detection_start_time >= self.min_detection_time
 
 
 if __name__ == '__main__':
@@ -180,7 +199,7 @@ if __name__ == '__main__':
     print("Done.")
 
     us_feature_hall = UltraSoundFeatureWalkThrough(ub_hall, 0.3)
-    us_feature_hall_filtered = UltraSoundFeatureWalkThroughFiltered(uf_hall, 0.3)
+    us_feature_hall_filtered = UltraSoundFeatureWalkThroughFiltered(uf_hall, 1.0, 0.2)
     # us_feature_motion = UltraSoundFeatureMotion(ub_hall, 3)
 
     try:
