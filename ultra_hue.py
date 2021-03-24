@@ -33,6 +33,9 @@ class Light(object):
     def switch(self, on):
         self.hue._set_light(self.id, on)
 
+    def is_on(self):
+        return self.state['on']
+
     def __str__(self):
         ret = f"{self.name} ({self.id}) "
         ret += "ON" if self.state['on'] else "OFF"
@@ -102,6 +105,13 @@ if __name__=="__main__":
     for l in lights:
         print(l)
     print()
+
+    flur = [hue.get_light_by_name("F 1"), hue.get_light_by_name("F 2")]
+    print(flur)
+    for l in flur:
+        print(l)
+
+    sys.exit(0)
 
     balkon = hue.get_light_by_name("Balkon")
     assert balkon is not None

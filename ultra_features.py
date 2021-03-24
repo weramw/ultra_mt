@@ -185,7 +185,7 @@ class UltraSoundFeatureWalkThroughFiltered(UltraSoundFeatures):
             detection_time = self.detection_end_time - self.detection_start_time
         else:
             detection_time = -1.
-        print(f"Distance: {dist:.2f}m < {self.max_detection_threshold:.2f}m? Interval: [{self.detection_start_time}, {self.detection_end_time}] ({detection_time}s)")
+        print(f"Distance: {dist:.2f}m < {self.max_detection_threshold:.2f}m? Interval: [{self.detection_start_time}, {self.detection_end_time}] ({detection_time:.2f}s)")
         if self.detection_start_time is not None:
             return detection_time >= self.min_detection_time
         else:
