@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import time
+import logging
 import RPi.GPIO as gpio
 
 from ultra_sound import UltraSound
@@ -21,6 +22,8 @@ door_reed = UltraSwitch(switch_pin=25)
 hue_ip = "192.168.0.87"
 api_key = "tNmBJLQdGdYBta51nzwU2PP8GfzuzFFBlup5h9c2"
 hue = HueBridge(hue_ip, api_key)
+
+logger = None
 
 def print_lights(ll):
     for l in ll:
@@ -54,12 +57,13 @@ class UltraMt(object):
     def update(self):
         self.ultra_mt()
         if self.trigger_interval is not None:
-            print(f"Light Interval active: {self.interval_active}, Interval: [{self.trigger_interval[0]:.2f}, {self.trigger_interval[1]:.2f}] - {self.trigger_interval[1] - self.trigger_interval[0]:.2f}s, Lights were on: {self.lights_were_on}")
+            logger.debug(f"Light Interval active: {self.interval_active}, Interval: [{self.trigger_interval[0]:.2f}, {self.trigger_interval[1]:.2f}] - {self.trigger_interval[1] - self.trigger_interval[0]:.2f}s, Lights were on: {self.lights_were_on}")
         self.update_lights()
 
     def update_lights(self):
         if self.interval_active:
             switch_lights(self.lights, True)
+            logger.info("Switching Lights on during active interval")
             return
         if self.trigger_interval is None:
             return
@@ -71,10 +75,11 @@ class UltraMt(object):
 
         now = time.time()
         trigger_time = now - self.trigger_interval[1]
-        print(f"Time since last trigger: {trigger_time:.1f}s")
+        logger.info(f"Time since last trigger: {trigger_time:.1f}s")
         if trigger_time > 15.0:
             switch_lights(self.lights, False)
             self.trigger_interval = None
+            logger.info("Switching lights off after inactive interval")
     
     def ultra_mt(self):
         if self.sensor_triggered():
@@ -89,16 +94,43 @@ class UltraMt(object):
             self.interval_active = False
 
     def sensor_triggered(self):
-        print("Features: Hall   Bath")
+        logger.debug("Features: Hall   Bath")
         hall_motion = us_feature_hall_filtered.has_motion()
         bath_motion = us_feature_bath_filtered.has_motion()
-        print(f"us_feature_hall: {hall_motion}")
-        print(f"us_feature_bath: {bath_motion}")
+        logger.debug(f"us_feature_hall: {hall_motion}")
+        logger.debug(f"us_feature_bath: {bath_motion}")
         door_open = not door_reed.is_on()
-        print(f"door_open: {door_open}")
+        logger.debug(f"door_open: {door_open}")
         return hall_motion or bath_motion or door_open
 
+def setupLogging():
+    # TODO
+    # setup loggers in other modules
+    # determine log path IF root
+    # enable/disable debug logging for console/files
+    global logger
+    logger = logging.getLogger("ultra_mt")
+    logger.setLevel(logging.DEBUG)
+
+    fh = logging.FileHandler("ultra_mt.log")
+    fh.setLevel(logging.INFO)
+    fhd = logging.FileHandler("ultra_mt_debug.log")
+    fhd.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter("%(asctime)s %(name)s [%(levelname)s] %(message)s")
+    fh.setFormatter(formatter)
+    fhd.setFormatter(formatter)
+    ch.setFormatter(formatter)
+
+    logger.addHandler(fh)
+    logger.addHandler(fhd)
+    logger.addHandler(ch)
+
 if __name__ == '__main__':
+    setupLogging()
+
     flur = [hue.get_light_by_name("F 1"), hue.get_light_by_name("F 2")]
     print_lights(flur)
     assert all(flur)
@@ -106,10 +138,10 @@ if __name__ == '__main__':
     switch_lights(flur, False)
 
     flash_lights(flur)
-    print("Calibrating...")
+    logger.info("Calibrating...")
     uf_hall.calibrate()
     uf_bath.calibrate()
-    print("Done.")
+    logger.info("Done.")
     flash_lights(flur)
     time.sleep(1.0)
     flash_lights(flur)
