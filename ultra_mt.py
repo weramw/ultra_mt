@@ -105,7 +105,6 @@ class UltraMt(object):
 
 def setupLogging():
     # TODO
-    # setup loggers in other modules
     # determine log path IF root
     # enable/disable debug logging for console/files
     global logger
@@ -119,7 +118,7 @@ def setupLogging():
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
 
-    formatter = logging.Formatter("%(asctime)s %(name)s [%(levelname)s] %(message)s")
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
     fh.setFormatter(formatter)
     fhd.setFormatter(formatter)
     ch.setFormatter(formatter)

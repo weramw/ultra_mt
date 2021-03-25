@@ -2,6 +2,7 @@
 import sys
 import time
 import math
+import logging
 import RPi.GPIO as gpio
 
 from ultra_sound import UltraSound
@@ -9,6 +10,8 @@ from kalman_filter import KalmanFilter
 
 us_hall = UltraSound(trigger_pin=17, echo_pin=27)
 us_bath = UltraSound(trigger_pin=23, echo_pin=24)
+
+logger = logging.getLogger('ultra_mt')
 
 class UltraSoundBuffer(object):
     def __init__(self, us, distance_buffer_max_age=0.5):
@@ -39,7 +42,7 @@ class UltraSoundBuffer(object):
         self.calibration_range = sum(ranges)/len(ranges)
         sqr_error = [(dist - self.calibration_range)**2 for dist in ranges]
         self.calibration_std = math.sqrt(sum(sqr_error)/(len(ranges) - 1))
-        print(f"Calibrated range as {self.calibration_range:.2f}m +- {self.calibration_std:.3f}m")
+        logger.info(f"Calibrated range as {self.calibration_range:.2f}m +- {self.calibration_std:.3f}m")
 
     def update(self):
         """ Update the internal feature based on sensor data. """
@@ -92,7 +95,7 @@ class UltraSoundFilter(object):
         self.calibration_range = sum(ranges)/len(ranges)
         sqr_error = [(dist - self.calibration_range)**2 for dist in ranges]
         self.calibration_std = math.sqrt(sum(sqr_error)/(len(ranges) - 1))
-        print(f"Calibrated range as {self.calibration_range:.2f}m +- {self.calibration_std:.3f}m")
+        logger.info(f"Calibrated range as {self.calibration_range:.2f}m +- {self.calibration_std:.3f}m")
         self.kalman_filter = KalmanFilter(self.calibration_range, self.calibration_std)
 
     def update(self):
@@ -134,7 +137,7 @@ class UltraSoundFeatureWalkThrough(UltraSoundFeatures):
         if not dists:
             return False
         max_dist = max(dists)
-        print(f"Distance: {max_dist:.2f}m < {self.ultra_sound_buffer.calibration_range - self.ultra_sound_buffer.calibration_std - self.min_detection_width:.2f}m")
+        logger.debug(f"Distance: {max_dist:.2f}m < {self.ultra_sound_buffer.calibration_range - self.ultra_sound_buffer.calibration_std - self.min_detection_width:.2f}m")
         return max_dist < self.ultra_sound_buffer.calibration_range - self.ultra_sound_buffer.calibration_std - self.min_detection_width
 
 class UltraSoundFeatureMotion(UltraSoundFeatures):
@@ -150,7 +153,7 @@ class UltraSoundFeatureMotion(UltraSoundFeatures):
         mean_dist = sum(dists)/len(dists)
         sqr_error = [(dist - mean_dist)**2 for dist in dists]
         std_dist = math.sqrt(sum(sqr_error)/(len(dists) - 1))
-        print(f"Motion: std {std_dist:.3f}m > min_motion_mahab {self.min_motion_mahanobilis} * calib std {self.ultra_sound_buffer.calibration_std} = {self.min_motion_mahanobilis * self.ultra_sound_buffer.calibration_std:.3f}")
+        logger.debug(f"Motion: std {std_dist:.3f}m > min_motion_mahab {self.min_motion_mahanobilis} * calib std {self.ultra_sound_buffer.calibration_std} = {self.min_motion_mahanobilis * self.ultra_sound_buffer.calibration_std:.3f}")
         return std_dist > self.min_motion_mahanobilis * self.ultra_sound_buffer.calibration_std
 
 class UltraSoundFeatureWalkThroughFiltered(UltraSoundFeatures):
@@ -185,23 +188,25 @@ class UltraSoundFeatureWalkThroughFiltered(UltraSoundFeatures):
             detection_time = self.detection_end_time - self.detection_start_time
         else:
             detection_time = -1.
-        print(f"Distance: {dist:.2f}m < {self.max_detection_threshold:.2f}m? Interval: [{self.detection_start_time}, {self.detection_end_time}] ({detection_time:.2f}s)")
+        logger.debug(f"Distance: {dist:.2f}m < {self.max_detection_threshold:.2f}m? Interval: [{self.detection_start_time}, {self.detection_end_time}] ({detection_time:.2f}s)")
         if self.detection_start_time is not None:
             return detection_time >= self.min_detection_time
         else:
             return False
 
 if __name__ == '__main__':
+    logging.getLogger("ultra_mt").setLevel(level=logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s] %(message)s")
     ub_hall = UltraSoundBuffer(us_hall)
     ub_bath = UltraSoundBuffer(us_bath)
     uf_hall = UltraSoundFilter(us_hall)
     uf_bath = UltraSoundFilter(us_bath)
-    print("Calibrating...")
+    logger.info("Calibrating...")
     ub_hall.calibrate()
     ub_bath.calibrate()
     uf_hall.calibrate()
     uf_bath.calibrate()
-    print("Done.")
+    logger.info("Done.")
 
     us_feature_hall = UltraSoundFeatureWalkThrough(ub_hall, 0.3)
     us_feature_hall_filtered = UltraSoundFeatureWalkThroughFiltered(uf_hall, 1.0, 0.2)
@@ -213,14 +218,14 @@ if __name__ == '__main__':
             ub_bath.update()
             uf_hall.update()
             uf_bath.update()
-            print(f"Filtered    Hall: {uf_hall.get_distance():.2f}\tBath: {uf_bath.get_distance():.2f}")
+            logger.info(f"Filtered    Hall: {uf_hall.get_distance():.2f}\tBath: {uf_bath.get_distance():.2f}")
             hall_avg = sum(ub_hall.get_distances())/len(ub_hall.get_distances())
             bath_avg = sum(ub_bath.get_distances())/len(ub_bath.get_distances())
-            print(f"Averaged    Hall: {hall_avg:.2f}\tBath: {bath_avg:.2f}")
-            print(f"Max         Hall: {max(ub_hall.get_distances()):.2f}\tBath: {max(ub_bath.get_distances()):.2f}")
-            print(f"us_feature_hall: {us_feature_hall.has_motion()}")
-            print(f"us_feature_hall_filtered: {us_feature_hall_filtered.has_motion()}")
-            print(f"us_feature_bath_filtered: {us_feature_bath_filtered.has_motion()}")
+            logger.info(f"Averaged    Hall: {hall_avg:.2f}\tBath: {bath_avg:.2f}")
+            logger.info(f"Max         Hall: {max(ub_hall.get_distances()):.2f}\tBath: {max(ub_bath.get_distances()):.2f}")
+            logger.info(f"us_feature_hall: {us_feature_hall.has_motion()}")
+            logger.info(f"us_feature_hall_filtered: {us_feature_hall_filtered.has_motion()}")
+            logger.info(f"us_feature_bath_filtered: {us_feature_bath_filtered.has_motion()}")
             time.sleep(0.1)
     except KeyboardInterrupt:
         gpio.cleanup()
