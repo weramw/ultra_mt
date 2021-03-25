@@ -106,7 +106,6 @@ class UltraMt(object):
 
 def setupLogging():
     # TODO
-    # determine log path IF root
     # enable/disable debug logging for console/files
     global logger
     log_path = "./"
@@ -115,22 +114,22 @@ def setupLogging():
 
     logger = logging.getLogger("ultra_mt")
     logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
 
-    fh = logging.FileHandler(os.path.join(log_path, "ultra_mt.log"))
-    fh.setLevel(logging.INFO)
-    fhd = logging.FileHandler(os.path.join(log_path, "ultra_mt_debug.log"))
-    fhd.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
-
-    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
-    fh.setFormatter(formatter)
-    fhd.setFormatter(formatter)
     ch.setFormatter(formatter)
-
-    logger.addHandler(fh)
-    logger.addHandler(fhd)
     logger.addHandler(ch)
+    if "log" in sys.argv[1:]:
+        fh = logging.FileHandler(os.path.join(log_path, "ultra_mt.log"))
+        fh.setLevel(logging.INFO)
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+    if "log_debug" in sys.argv[1:]:
+        fhd = logging.FileHandler(os.path.join(log_path, "ultra_mt_debug.log"))
+        fhd.setLevel(logging.DEBUG)
+        fhd.setFormatter(formatter)
+        logger.addHandler(fhd)
 
 if __name__ == '__main__':
     setupLogging()
