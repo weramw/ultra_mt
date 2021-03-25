@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import os
 import time
 import logging
 import RPi.GPIO as gpio
@@ -108,12 +109,16 @@ def setupLogging():
     # determine log path IF root
     # enable/disable debug logging for console/files
     global logger
+    log_path = "./"
+    if os.geteuid() == 0:
+        log_path = "/var/log/ultra-mt"
+
     logger = logging.getLogger("ultra_mt")
     logger.setLevel(logging.DEBUG)
 
-    fh = logging.FileHandler("ultra_mt.log")
+    fh = logging.FileHandler(os.path.join(log_path, "ultra_mt.log"))
     fh.setLevel(logging.INFO)
-    fhd = logging.FileHandler("ultra_mt_debug.log")
+    fhd = logging.FileHandler(os.path.join(log_path, "ultra_mt_debug.log"))
     fhd.setLevel(logging.DEBUG)
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
