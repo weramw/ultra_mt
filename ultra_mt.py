@@ -105,8 +105,6 @@ class UltraMt(object):
         return hall_motion or bath_motion or door_open
 
 def setupLogging():
-    # TODO
-    # enable/disable debug logging for console/files
     global logger
     log_path = "./"
     if os.geteuid() == 0:
