@@ -3,6 +3,7 @@ import sys
 import os
 import time
 import logging
+import csv
 import RPi.GPIO as gpio
 
 from ultra_sound import UltraSound
@@ -25,6 +26,8 @@ api_key = "tNmBJLQdGdYBta51nzwU2PP8GfzuzFFBlup5h9c2"
 hue = HueBridge(hue_ip, api_key)
 
 logger = None
+data_log = None
+data_writer = None
 
 def print_lights(ll):
     for l in ll:
@@ -102,10 +105,26 @@ class UltraMt(object):
         logger.debug(f"us_feature_bath: {bath_motion}")
         door_open = not door_reed.is_on()
         logger.debug(f"door_open: {door_open}")
+        now = time.time()
+        log_data("ultra_sound", now, "hall", us_hall.last_distance)
+        log_data("ultra_sound", now, "bath", us_bath.last_distance)
+        log_data("ultra_sound_filter", now, "hall", *[uf_hall.kalman_filter.state[i] for i in range(2)],
+                *[uf_hall.kalman_filter.cov[i,j] for i in range(2) for j in range(2)])
+        log_data("ultra_sound_filter", now, "bath", *[uf_bath.kalman_filter.state[i] for i in range(2)],
+                *[uf_bath.kalman_filter.cov[i,j] for i in range(2) for j in range(2)])
+        log_data("door_open", now, door_open)
         return hall_motion or bath_motion or door_open
+
+def log_data(data_type, ts, *data):
+    if data_log is None:
+        return
+    data_writer.writerow([data_type, ts, *data])
 
 def setupLogging():
     global logger
+    global data_log
+    global data_writer
+
     log_path = "./"
     if os.geteuid() == 0:
         log_path = "/var/log/ultra-mt"
@@ -128,6 +147,10 @@ def setupLogging():
         fhd.setLevel(logging.DEBUG)
         fhd.setFormatter(formatter)
         logger.addHandler(fhd)
+
+    if "log_data" in sys.argv[1:]:
+        data_log = open(os.path.join(log_path, "ultra_mt_data.csv"), 'a', newline='')
+        data_writer = csv.writer(data_log, lineterminator='\n')
 
 if __name__ == '__main__':
     setupLogging()
@@ -158,6 +181,8 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         gpio.cleanup()
 
+    if data_log is not None:
+        data_log.close()
     gpio.cleanup()
     sys.exit(0)
 

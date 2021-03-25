@@ -13,6 +13,8 @@ class UltraSound(object):
         gpio.setup(self.trigger_pin, gpio.OUT)
         gpio.setup(self.echo_pin, gpio.IN)
 
+        self.last_distance = None
+
     def get_distance(self):
         # Send 10us pulse
         gpio.output(self.trigger_pin, True)
@@ -39,6 +41,7 @@ class UltraSound(object):
         # sonic speed is 343.2 m/s
         # divide by 2, because forth and back
         distance = 343.2 * pulse_length/ 2
+        self.last_distance = distance
         return distance
 
 if __name__ == '__main__':
