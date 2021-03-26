@@ -41,6 +41,7 @@ def switch_lights(ll, on):
 def any_light_on(ll):
     for l in ll:
         l.update()
+        logger.info(f"Light state {l}")
     return any([l.is_on() for l in ll])
 
 def flash_lights(lights):
@@ -75,6 +76,7 @@ class UltraMt(object):
         # we have an inactive interval
         if self.lights_were_on:     # we didnt switch them on -> we dont switch them off
             self.trigger_interval = None
+            logger.info("Resetting inactive interval as lights_were_on")
             return
 
         now = time.time()
@@ -89,10 +91,17 @@ class UltraMt(object):
         if self.sensor_triggered():
             now = time.time()
             if self.trigger_interval is None or not self.interval_active:   # new interval
+                # only record light state, if there is no inactive interval
+                # if there is, we are in trigger time and thus switched the lights on ourselves
+                # thus, the lights_were_on state should be kept from what it was initially
+                if self.trigger_interval is None:
+                    self.lights_were_on = any_light_on(self.lights)
+                    logger.info(f"Updated lights_were_on to {self.lights_were_on}")
                 self.trigger_interval = (now, now)
-                self.lights_were_on = any_light_on(self.lights)
+                logger.info(f"New interval starting at {now}")
             else:   # we have an active interval - just push the end
                 self.trigger_interval = (self.trigger_interval[0], now)
+                logger.info(f"Extending active interval to [{self.trigger_interval[0]:.2f}, {self.trigger_interval[1]:.2f}] - {self.trigger_interval[1] - self.trigger_interval[0]:.2f}s")
             self.interval_active = True
         else:
             self.interval_active = False
