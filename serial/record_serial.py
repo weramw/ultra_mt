@@ -12,8 +12,6 @@ if __name__ == "__main__":
     print("Opening Device...")
     dev = serial.Serial(device, 9600)
 
-    #dev = open(device, "r")
-
     print("Done.\nOpening output file...")
     data_log = open("serial_data.csv", 'a', newline='')
     data_writer = csv.writer(data_log, lineterminator='\n')
@@ -23,15 +21,12 @@ if __name__ == "__main__":
     try:
         while True:
             try:
-                print("?")
                 line = dev.readline()
-                print(line)
                 line = line.decode('utf-8')
                 print(line)
 
                 now = time.time()
                 parts = line.split()
-                print("!")
                 if not got_valid_line and len(parts) == 10:
                     print("Got valid line. Starting recording")
                     print(line)
